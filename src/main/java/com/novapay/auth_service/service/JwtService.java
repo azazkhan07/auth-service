@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 
 public interface JwtService {
-    String generateToken(String username, Boolean isAccessToken);
+    String generateToken(String username, String role, Boolean isAccessToken);
 
     String getUsernameFromToken(String token);
 

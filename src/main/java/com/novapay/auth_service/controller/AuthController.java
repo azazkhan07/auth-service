@@ -27,7 +27,9 @@ import java.util.Map;
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthController {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(AuthController.class);
+
     private final AuthService authService;
 
     @Operation(summary = "User login Api")

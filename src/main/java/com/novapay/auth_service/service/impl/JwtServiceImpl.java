@@ -1,6 +1,5 @@
 package com.novapay.auth_service.service.impl;
 
-
 import com.novapay.auth_service.exception.UnauthorizedException;
 import com.novapay.auth_service.service.JwtService;
 import io.jsonwebtoken.Claims;
@@ -10,7 +9,6 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import java.security.Key;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -49,21 +47,23 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String generateToken(String username, Boolean isAccessToken) {
+    public String generateToken(String username, String role, Boolean isAccessToken) {
+
         Long expTime = isAccessToken ? EXPIRATION_TIME : REFRESH_EXPIRATION_TIME;
         String tokenType = isAccessToken ? ACCESS_TOKEN_TYPE : REFRESH_TOKEN_TYPE;
+
         Map<String, Object> claims = new HashMap<>();
         claims.put("typ", tokenType);
+        claims.put("role", role);
 
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expTime))
-                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes()), SignatureAlgorithm.HS256)
-                .compact();
+                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes()),
+                        SignatureAlgorithm.HS256).compact();
     }
-
     @Override
     public String getUsernameFromToken(String token) {
         return Jwts.parserBuilder()

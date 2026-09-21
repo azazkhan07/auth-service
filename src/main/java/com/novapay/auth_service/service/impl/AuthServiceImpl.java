@@ -37,7 +37,6 @@ public class AuthServiceImpl implements AuthService {
     private final UserDetailsService userDetailsService;
     private final TokenBlackListService tokenBlackListService;
 
-
     @Override
     public JwtResponse login(LoginRequest loginRequest) {
         LOGGER.info("Login attempt for email={}", loginRequest.getEmail());
@@ -56,9 +55,9 @@ public class AuthServiceImpl implements AuthService {
 
         LOGGER.info("User authenticated successfully email={}", loginRequest.getEmail());
 
-        String accessToken = jwtService.generateToken(user.email(), true);
-        String refreshToken = jwtService.generateToken(user.email(),
-                false);
+        String accessToken = jwtService.generateToken(user.email(), user.role(), true);
+        String refreshToken = jwtService.generateToken(user.email(), user.role(), false);
+
         LOGGER.info("JWT tokens generated for email={}", user.email());
         return JwtResponse.builder()
                 .accessToken(accessToken)
@@ -66,7 +65,6 @@ public class AuthServiceImpl implements AuthService {
                 .user((user))
                 .build();
     }
-
 
     @Override
     public JwtResponse refreshToken(RefreshTokenRequest refreshTokenRequest) {
@@ -83,8 +81,8 @@ public class AuthServiceImpl implements AuthService {
 
         UserAuthResponse user = userClient.getUserByEmail(usernameFromRefreshToken);
 
-        String accessToken = jwtService.generateToken(user.email(), true);
-        String newRefreshToken = jwtService.generateToken(user.email(), false);
+        String accessToken = jwtService.generateToken(user.email(), user.role(), true);
+        String newRefreshToken = jwtService.generateToken(user.email(), user.role(), false);
 
         LOGGER.info("New JWT token generated");
 
@@ -95,17 +93,17 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-
     @Override
     public JwtResponse register(RegisterRequest registerRequest) {
         LOGGER.info("Register request for email={}", registerRequest.getEmail());
         UserRequest userRequest = authMapper.mapToUserRequest(registerRequest);
         UserResponse userResponse = userClient.registerUser(userRequest);
 
-        String accessToken = jwtService.generateToken(userResponse.email(), true);
-        String refreshToken = jwtService.generateToken(userResponse.email(), false);
-
         UserAuthResponse userAuthResponse = userClient.getUserByEmail(userResponse.email());
+
+        String accessToken = jwtService.generateToken(userResponse.email(), userAuthResponse.role(), true);
+
+        String refreshToken = jwtService.generateToken(userResponse.email(), userAuthResponse.role(), false);
 
         LOGGER.info("User registered and auto logged in {}", userResponse.email());
 
