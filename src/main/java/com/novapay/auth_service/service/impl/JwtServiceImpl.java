@@ -9,6 +9,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -25,12 +27,13 @@ public class JwtServiceImpl implements JwtService {
     private Long EXPIRATION_TIME;
     @Value("${jwt.refresh.expiration}")
     private Long REFRESH_EXPIRATION_TIME;
+
     private static final String ACCESS_TOKEN_TYPE = "access_token";
     private static final String REFRESH_TOKEN_TYPE = "refresh_token";
 
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(secretKey.getBytes());
+        return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     private Claims extractAllClaims(String token) {
@@ -61,9 +64,10 @@ public class JwtServiceImpl implements JwtService {
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expTime))
-                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes()),
+                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8)),
                         SignatureAlgorithm.HS256).compact();
     }
+
     @Override
     public String getUsernameFromToken(String token) {
         return Jwts.parserBuilder()
@@ -76,17 +80,17 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public boolean validateToken(String token) {
-        if (this.isTokenExpired(token)) {
-            return false;
-        }
         try {
             Jwts.parserBuilder()
                     .setSigningKey(getSigningKey())
                     .build()
                     .parseClaimsJws(token);
+
             return true;
+
         } catch (io.jsonwebtoken.ExpiredJwtException exception) {
             throw new UnauthorizedException("JWT token is expired. Please login again");
+
         } catch (JwtException | IllegalArgumentException exception) {
             throw new UnauthorizedException("Invalid JWT token");
         }
@@ -111,7 +115,7 @@ public class JwtServiceImpl implements JwtService {
                 .parseClaimsJws(token)
                 .getBody();
         String tokenType = (String) claims.get("typ");
-        return tokenType.equals(REFRESH_TOKEN_TYPE);
+        return REFRESH_TOKEN_TYPE.equals(tokenType);
     }
 
     @Override
@@ -120,9 +124,10 @@ public class JwtServiceImpl implements JwtService {
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
+
                 .getBody();
         String tokenType = (String) claims.get("typ");
-        return tokenType.equals(ACCESS_TOKEN_TYPE);
+        return ACCESS_TOKEN_TYPE.equals(tokenType);
     }
 
     @Override

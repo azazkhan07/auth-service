@@ -71,15 +71,21 @@ public class AuthServiceImpl implements AuthService {
 
         LOGGER.info("Refresh token request received");
 
-        if (!jwtService.validateToken(refreshTokenRequest.getRefreshToken()) || !jwtService.isRefreshToken(refreshTokenRequest.getRefreshToken())) {
-            LOGGER.warn("Invalid refresh token used");
+        String refreshToken = refreshTokenRequest.getRefreshToken();
+
+        if (!jwtService.validateToken(refreshToken) || !jwtService.isRefreshToken(refreshToken) || tokenBlackListService.isBlacklisted(refreshToken)) {
+
+            LOGGER.warn("Invalid or blacklisted refresh token used");
             throw new UnauthorizedException("Invalid refresh token");
         }
+
         String usernameFromRefreshToken = jwtService.getUsernameFromToken(refreshTokenRequest.getRefreshToken());
 
         LOGGER.info("Refresh token valid");
 
         UserAuthResponse user = userClient.getUserByEmail(usernameFromRefreshToken);
+
+        tokenBlackListService.blacklistToken(refreshToken);
 
         String accessToken = jwtService.generateToken(user.email(), user.role(), true);
         String newRefreshToken = jwtService.generateToken(user.email(), user.role(), false);
@@ -95,7 +101,9 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public JwtResponse register(RegisterRequest registerRequest) {
+
         LOGGER.info("Register request for email={}", registerRequest.getEmail());
+
         UserRequest userRequest = authMapper.mapToUserRequest(registerRequest);
         UserResponse userResponse = userClient.registerUser(userRequest);
 
@@ -120,10 +128,10 @@ public class AuthServiceImpl implements AuthService {
                 .getContext()
                 .getAuthentication();
         if (authentication == null
-                || !authentication.isAuthenticated()
-                || authentication.getPrincipal().equals("anonymousUser")) {
+                || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
             throw new UnauthorizedException("User not authenticated");
         }
+
         String email = authentication.getName();
         LOGGER.info("Fetching current logged-in user {}", email);
         return userClient.getUserByEmail(email);

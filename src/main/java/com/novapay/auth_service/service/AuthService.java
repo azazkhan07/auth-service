@@ -7,6 +7,7 @@ import com.novapay.auth_service.dto.response.JwtResponse;
 import com.novapay.auth_service.dto.response.UserAuthResponse;
 
 public interface AuthService {
+
     JwtResponse login(LoginRequest loginRequest);
 
     JwtResponse refreshToken(RefreshTokenRequest refreshTokenRequest);
